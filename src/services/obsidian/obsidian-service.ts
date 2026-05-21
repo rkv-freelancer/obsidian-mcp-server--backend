@@ -391,7 +391,11 @@ export class ObsidianService {
   async searchText(ctx: Context, query: string, contextLength = 100): Promise<TextSearchHit[]> {
     const params = new URLSearchParams({ query, contextLength: String(contextLength) });
     const res = await this.#request(ctx, `/search/simple/?${params}`, { method: 'POST' });
-    return (await res.json()) as RawSimpleSearchHit[];
+    const raw = (await res.json()) as RawSimpleSearchHit[];
+    // Upstream returns a constant `score` that carries no ranking signal for
+    // text mode — drop it on the way out so consumers don't mistake it for
+    // relevance. Omnisearch is the source of real BM25 ranking.
+    return raw.map((h) => ({ filename: h.filename, matches: h.matches }));
   }
 
   async searchJsonLogic(

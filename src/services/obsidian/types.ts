@@ -69,7 +69,6 @@ export interface TextSearchHit {
     context: string;
     match: { start: number; end: number };
   }>;
-  score?: number;
 }
 
 export interface StructuredSearchHit {

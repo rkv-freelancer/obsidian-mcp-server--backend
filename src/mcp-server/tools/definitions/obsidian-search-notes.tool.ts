@@ -30,7 +30,6 @@ const CursorSchema = z
 const TextHitSchema = z
   .object({
     filename: z.string().describe('Vault-relative path of the matching note.'),
-    score: z.number().optional().describe('Relevance score from the search index, when available.'),
     matches: z
       .array(
         z
@@ -122,11 +121,15 @@ export function buildSearchNotesTool({ omnisearchReachable }: { omnisearchReacha
     query: z
       .string()
       .optional()
-      .describe('For `text` and `omnisearch` modes: the query string. Required for both.'),
+      .describe(
+        'The query string. Required for `text` and `omnisearch` modes; ignored in `jsonlogic` mode (use `logic` instead — passing a JSONLogic tree here will fail Zod validation since this field must be a string).',
+      ),
     logic: z
       .record(z.string(), z.unknown())
       .optional()
-      .describe('JSONLogic tree. Required and only used when `mode` is `"jsonlogic"`.'),
+      .describe(
+        'JSONLogic tree. Required for `jsonlogic` mode; ignored in `text` and `omnisearch` modes (use `query` instead — passing a string here will fail Zod validation since this field must be an object).',
+      ),
     contextLength: z
       .number()
       .int()
@@ -348,11 +351,10 @@ export function buildSearchNotesTool({ omnisearchReachable }: { omnisearchReacha
       lines.push('');
       if (result.mode === 'text') {
         for (const h of result.hits) {
-          const score = h.score !== undefined ? ` (score: ${h.score})` : '';
           const trunc = h.truncated
             ? ` — truncated, showing first ${h.matches.length} of ${h.totalMatches} matches`
             : '';
-          lines.push(`### ${h.filename}${score}${trunc}`);
+          lines.push(`### ${h.filename}${trunc}`);
           for (const m of h.matches) {
             lines.push(`- match[${m.match.start}–${m.match.end}]: ${truncate(m.context, 240)}`);
           }
