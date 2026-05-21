@@ -49,7 +49,7 @@ export const obsidianOpenInUi = tool('obsidian_open_in_ui', {
       code: JsonRpcErrorCode.NotFound,
       when: '`failIfMissing: true` (default) and the path does not exist in the vault. Pass `failIfMissing: false` to allow Obsidian to create the file on open.',
       recovery:
-        'Verify the path with obsidian_list_notes or pass failIfMissing false to create on open.',
+        'Verify the path with obsidian_list_notes or obsidian_search_notes first — a typo would otherwise materialize as an empty file. If creation is intended, retry with failIfMissing: false.',
     },
     {
       reason: 'ambiguous_path',
@@ -88,7 +88,12 @@ export const obsidianOpenInUi = tool('obsidian_open_in_ui', {
       if (suggestions.length > 0) {
         hintParts.push(`Did you mean: ${suggestions.map((s) => `"${s}"`).join(', ')}?`);
       }
-      hintParts.push('Pass failIfMissing: false to create on open.');
+      // Lead with verification so a typo doesn't get materialized as an empty
+      // file by following the recovery hint blindly. Creation stays as the
+      // explicit opt-in second path.
+      hintParts.push(
+        'Verify the path with obsidian_list_notes or obsidian_search_notes — or, if creation is intended, retry with failIfMissing: false.',
+      );
       throw ctx.fail(
         'note_missing',
         `Cannot open '${input.path}' — file does not exist.`,
