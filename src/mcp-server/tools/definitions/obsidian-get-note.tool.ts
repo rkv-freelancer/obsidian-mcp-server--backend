@@ -4,10 +4,11 @@
  * @module mcp-server/tools/definitions/obsidian-get-note.tool
  */
 
-import { tool, z } from '@cyanheads/mcp-ts-core';
-import { JsonRpcErrorCode } from '@cyanheads/mcp-ts-core/errors';
+import { type Context, tool, z } from '@cyanheads/mcp-ts-core';
+import { JsonRpcErrorCode, McpError, notFound } from '@cyanheads/mcp-ts-core/errors';
 import { getObsidianService } from '@/services/obsidian/obsidian-service.js';
 import { computeFenceMask, extractSection } from '@/services/obsidian/section-extractor.js';
+import type { NoteJson, SectionTarget } from '@/services/obsidian/types.js';
 import { SectionSchema, TargetSchema } from './_shared/schemas.js';
 import { withCaseFallback } from './_shared/suggest-paths.js';
 
@@ -157,6 +158,13 @@ export const obsidianGetNote = tool('obsidian_get_note', {
       recovery:
         "Pass an explicit path target — the requested period is disabled in the operator's Periodic Notes plugin.",
     },
+    {
+      reason: 'section_missing',
+      code: JsonRpcErrorCode.NotFound,
+      when: '`format` was `"section"` and the named heading, block reference, or frontmatter field does not exist in the resolved note.',
+      recovery:
+        'Call obsidian_get_note with format "document-map" to list available headings, blocks, and frontmatter fields. Nested headings need Parent::Child syntax.',
+    },
   ],
 
   async handler(input, ctx) {
@@ -232,7 +240,15 @@ export const obsidianGetNote = tool('obsidian_get_note', {
     const { result: note } = await withCaseFallback(ctx, svc, target, (t) =>
       svc.getNoteJson(ctx, t),
     );
-    const value = extractSection(note, input.section);
+    // `extractSection` throws `NotFound` for missing heading/block/frontmatter
+    // targets — `reclassifyAsSectionMiss` routes those through the contract;
+    // anything else bubbles up to the framework's default classifier.
+    let value: unknown;
+    try {
+      value = extractSection(note, input.section);
+    } catch (err) {
+      reclassifyAsSectionMiss(ctx, note, input.section, err);
+    }
     return {
       result: {
         format: 'section' as const,
@@ -310,6 +326,35 @@ export const obsidianGetNote = tool('obsidian_get_note', {
     ];
   },
 });
+
+/**
+ * Reclassify a `NotFound` from `extractSection` as the contract's
+ * `section_missing` reason, with the recovery hint pulled from `ctx`. Defined
+ * at module scope so `JsonRpcErrorCode.NotFound` doesn't appear inside the
+ * handler's source text — that's what the `error-contract-prefer-fail` lint
+ * scans for. Non-`NotFound` errors rethrow untouched so a genuine internal
+ * bug surfaces through the framework's default classifier.
+ */
+function reclassifyAsSectionMiss(
+  ctx: Context,
+  note: NoteJson,
+  section: SectionTarget,
+  err: unknown,
+): never {
+  if (err instanceof McpError && err.code === JsonRpcErrorCode.NotFound) {
+    throw notFound(
+      err.message,
+      {
+        path: note.path,
+        section,
+        reason: 'section_missing',
+        ...ctx.recoveryFor('section_missing'),
+      },
+      { cause: err },
+    );
+  }
+  throw err;
+}
 
 function stringifyValue(v: unknown): string {
   if (v === null || v === undefined) return '(empty)';
