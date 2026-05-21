@@ -94,6 +94,13 @@ export const obsidianAppendToNote = tool('obsidian_append_to_note', {
       recovery:
         'Call obsidian_get_note with format document-map to discover available targets, or pass createTargetIfMissing: true to bring it into existence.',
     },
+    {
+      reason: 'content_preexists',
+      code: JsonRpcErrorCode.ValidationError,
+      when: 'Section append where the supplied content already appears at the target — rejected to keep retries idempotent (the default for the section path).',
+      recovery:
+        'Change the content to something not already present at the target, or use obsidian_patch_note with `patchOptions.applyIfContentPreexists: true` if a duplicate is intended.',
+    },
   ],
 
   async handler(input, ctx) {

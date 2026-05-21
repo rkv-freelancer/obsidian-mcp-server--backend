@@ -91,6 +91,13 @@ export const obsidianPatchNote = tool('obsidian_patch_note', {
       recovery:
         'Call obsidian_get_note with format document-map to discover the available targets.',
     },
+    {
+      reason: 'content_preexists',
+      code: JsonRpcErrorCode.ValidationError,
+      when: 'The supplied content already appears at the target — the patch was rejected to keep retries idempotent (the default).',
+      recovery:
+        'Pass `patchOptions.applyIfContentPreexists: true` to force-apply over preexisting content, or change the content to something not already present.',
+    },
   ],
 
   async handler(input, ctx) {

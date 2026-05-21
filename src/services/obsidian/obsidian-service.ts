@@ -683,6 +683,16 @@ export class ObsidianService {
         );
       case 400: {
         const upstreamMsg = body?.message ?? `Bad request to ${display}`;
+        // Content-preexists is a more specific case nested inside the broader
+        // "could not be applied" family — branch on it first so retries with
+        // identical content surface the right reason and recovery (toggle
+        // `applyIfContentPreexists`) instead of misleading section-miss copy.
+        if (/content-already-preexists-in-target/i.test(upstreamMsg)) {
+          throw validationError(
+            `The supplied content already appears at the target in ${display}. Pass \`applyIfContentPreexists: true\` to force-apply, or change the content.`,
+            data('content_preexists'),
+          );
+        }
         // The Local REST API returns a "could not be applied to the target
         // content" / "invalid-target" message when a PATCH names a section that
         // doesn't exist. Translate to actionable guidance.
