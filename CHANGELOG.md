@@ -2,6 +2,10 @@
 
 All notable changes to this project. Each entry links to its full per-version file in [changelog/](changelog/).
 
+## [3.2.2](changelog/3.2.x/3.2.2.md) — 2026-05-23
+
+mcp-ts-core ^0.9.1 → ^0.9.6; format-parity fixes on search_notes and get_note; manifest.json + .mcpbignore scaffolded for MCPB bundle support; install badges added to README.
+
 ## [3.2.1](changelog/3.2.x/3.2.1.md) — 2026-05-21 · ⚠️ Breaking
 
 Typed error contracts catch up to wire reality on `obsidian_get_note`, `obsidian_patch_note`, and `obsidian_append_to_note`; `obsidian_manage_tags` default `location` flips from `both` to `frontmatter`; `obsidian_search_notes` drops the opaque text-mode `score` field.

@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2026-05-21 14:26:49
+Generated on: 2026-05-23 12:22:52
 
 ```text
 obsidian-mcp-server/
@@ -30,6 +30,8 @@ obsidian-mcp-server/
 │   ├── clean.ts
 │   ├── devcheck.ts
 │   ├── lint-mcp.ts
+│   ├── lint-packaging.ts
+│   ├── list-skills.ts
 │   ├── split-changelog.ts
 │   └── tree.ts
 ├── skills/
@@ -178,6 +180,7 @@ obsidian-mcp-server/
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
+├── .mcpbignore
 ├── biome.json
 ├── bun.lock
 ├── bunfig.toml
@@ -186,6 +189,7 @@ obsidian-mcp-server/
 ├── devcheck.config.json
 ├── Dockerfile
 ├── LICENSE
+├── manifest.json
 ├── package.json
 ├── README.md
 ├── server.json

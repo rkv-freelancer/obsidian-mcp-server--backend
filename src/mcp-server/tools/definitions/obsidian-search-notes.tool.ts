@@ -370,6 +370,7 @@ export function buildSearchNotesTool({ omnisearchReachable }: { omnisearchReacha
       } else {
         for (const h of result.hits) {
           lines.push(`### ${h.filename}`);
+          lines.push(`result:`);
           lines.push('```json');
           lines.push(safeJsonStringify(h.result));
           lines.push('```');

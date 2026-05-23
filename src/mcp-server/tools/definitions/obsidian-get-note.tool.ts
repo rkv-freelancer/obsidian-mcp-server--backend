@@ -274,7 +274,7 @@ export const obsidianGetNote = tool('obsidian_get_note', {
       const lines = [
         `**${result.path}** (format: ${result.format})`,
         `*Tags:* ${result.tags.length > 0 ? result.tags.join(', ') : '(none)'}`,
-        `*Stat:* created=${formatIsoTime(result.stat.ctime)} modified=${formatIsoTime(result.stat.mtime)} size=${result.stat.size}`,
+        `*Stat:* ctime=${result.stat.ctime} mtime=${result.stat.mtime} size=${result.stat.size}`,
       ];
       const fmKeys = Object.keys(result.frontmatter);
       if (fmKeys.length > 0) {
@@ -307,7 +307,8 @@ export const obsidianGetNote = tool('obsidian_get_note', {
       ];
       return [{ type: 'text', text: lines.join('\n') }];
     }
-    const valueRender =
+    // valueText: heading/block sections; valueJson: frontmatter sections.
+    const value =
       result.valueText !== undefined
         ? result.valueText
         : result.valueJson !== undefined
@@ -318,9 +319,9 @@ export const obsidianGetNote = tool('obsidian_get_note', {
         type: 'text',
         text: [
           `**${result.path}** (format: ${result.format})`,
-          `*Section:* ${result.section.type} → ${result.section.target}`,
+          `*Section:* ${result.section.type} → ${result.section.target} (valueText/valueJson)`,
           '',
-          valueRender,
+          value,
         ].join('\n'),
       },
     ];
@@ -360,15 +361,6 @@ function stringifyValue(v: unknown): string {
   if (v === null || v === undefined) return '(empty)';
   if (typeof v === 'string') return v;
   return JSON.stringify(v, null, 2);
-}
-
-function formatIsoTime(ms: number): string {
-  if (!Number.isFinite(ms) || ms <= 0) return '(unknown)';
-  try {
-    return new Date(ms).toISOString();
-  } catch {
-    return String(ms);
-  }
 }
 
 /**
