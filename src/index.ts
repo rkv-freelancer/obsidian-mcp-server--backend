@@ -8,19 +8,22 @@
  * @module index
  */
 
-import { createApp, disabledTool } from '@cyanheads/mcp-ts-core';
-import { requestContextService } from '@cyanheads/mcp-ts-core/utils';
-import { getServerConfig } from '@/config/server-config.js';
-import { allPromptDefinitions } from '@/mcp-server/prompts/definitions/index.js';
-import { allResourceDefinitions } from '@/mcp-server/resources/definitions/index.js';
+import { createApp, disabledTool } from "@cyanheads/mcp-ts-core";
+import { requestContextService } from "@cyanheads/mcp-ts-core/utils";
+import { getServerConfig } from "@/config/server-config.js";
+import { allPromptDefinitions } from "@/mcp-server/prompts/definitions/index.js";
+import { allResourceDefinitions } from "@/mcp-server/resources/definitions/index.js";
 import {
   buildSearchNotesTool,
   commandToolDefinitions,
   readToolDefinitions,
   writeToolDefinitions,
-} from '@/mcp-server/tools/definitions/index.js';
-import { getObsidianService, initObsidianService } from '@/services/obsidian/obsidian-service.js';
-import { PathPolicy } from '@/services/obsidian/path-policy.js';
+} from "@/mcp-server/tools/definitions/index.js";
+import {
+  getObsidianService,
+  initObsidianService,
+} from "@/services/obsidian/obsidian-service.js";
+import { PathPolicy } from "@/services/obsidian/path-policy.js";
 
 const config = getServerConfig();
 const policy = new PathPolicy(config);
@@ -45,38 +48,38 @@ const searchNotesTool = buildSearchNotesTool({ omnisearchReachable });
  */
 function buildInstructions(): string {
   const sections: string[] = [
-    'Use the `obsidian_*` tools to access the Obsidian vault via the Local REST API plugin: search, read, write, and patch notes, including targeted edits to headings, blocks, and YAML frontmatter. Notes are addressed by vault-relative path including the file extension (e.g. `Folder/Note.md`); tags support hierarchical `parent/child` notation, and counts roll up to parents.',
+    "Use the `obsidian_*` tools to access the Obsidian vault via the Local REST API plugin: search, read, write, and patch notes, including targeted edits to headings, blocks, and YAML frontmatter. Notes are addressed by vault-relative path including the file extension (e.g. `Folder/Note.md`); tags support hierarchical `parent/child` notation, and counts roll up to parents.",
   ];
   if (config.readOnly) {
     sections.push(
-      'Read-only mode is active (OBSIDIAN_READ_ONLY=true): every write tool rejects every path with `path_forbidden` / `read_only_mode`.',
+      "Read-only mode is active (OBSIDIAN_READ_ONLY=true): every write tool rejects every path with `path_forbidden` / `read_only_mode`.",
     );
   } else if (!policy.isUnrestricted) {
     const { readPaths, writePaths } = policy.describe();
     const render = (scope: readonly string[] | string): string =>
-      typeof scope === 'string' ? scope : scope.map((p) => `'${p}'`).join(', ');
+      typeof scope === "string" ? scope : scope.map((p) => `'${p}'`).join(", ");
     sections.push(
       `Vault path policy is enforced. Readable: ${render(readPaths)}. Writable: ${render(writePaths)}. Paths outside scope reject with \`path_forbidden\` — error data carries the active scope so you can self-correct.`,
     );
   }
   if (config.enableCommands && !config.readOnly) {
     sections.push(
-      'Command-palette tools (`obsidian_list_commands`, `obsidian_execute_command`) are enabled and can fire any Obsidian command. Commands are opaque and may be destructive — prefer dedicated tools when one fits.',
+      "Command-palette tools (`obsidian_list_commands`, `obsidian_execute_command`) are enabled and can fire any Obsidian command. Commands are opaque and may be destructive — prefer dedicated tools when one fits.",
     );
   }
   if (omnisearchReachable) {
     sections.push(
-      '`obsidian_search_notes` includes an `omnisearch` mode: BM25-ranked, typo-tolerant, with PDF/OCR coverage (via the Text Extractor plugin). Results cap at 50 upstream — narrow the query (quoted phrases, `-exclusion`, `path:` / `ext:` filters) to surface more.',
+      "`obsidian_search_notes` includes an `omnisearch` mode: BM25-ranked, typo-tolerant, with PDF/OCR coverage (via the Text Extractor plugin). Results cap at 50 upstream — narrow the query (quoted phrases, `-exclusion`, `path:` / `ext:` filters) to surface more.",
     );
   }
-  return sections.join('\n\n');
+  return sections.join("\n\n");
 }
 
 const writeTools = config.readOnly
   ? writeToolDefinitions.map((def) =>
       disabledTool(def, {
-        reason: 'Disabled by OBSIDIAN_READ_ONLY=true.',
-        hint: 'Unset OBSIDIAN_READ_ONLY (or set it to false) to enable write tools.',
+        reason: "Disabled by OBSIDIAN_READ_ONLY=true.",
+        hint: "Unset OBSIDIAN_READ_ONLY (or set it to false) to enable write tools.",
       }),
     )
   : writeToolDefinitions;
@@ -87,15 +90,20 @@ const commandTools =
     : commandToolDefinitions.map((def) =>
         disabledTool(def, {
           reason: config.readOnly
-            ? 'Disabled by OBSIDIAN_READ_ONLY=true (commands can mutate).'
-            : 'Disabled by default — Obsidian commands are opaque and can be destructive.',
+            ? "Disabled by OBSIDIAN_READ_ONLY=true (commands can mutate)."
+            : "Disabled by default — Obsidian commands are opaque and can be destructive.",
           hint: config.readOnly
-            ? 'Unset OBSIDIAN_READ_ONLY to allow commands; OBSIDIAN_ENABLE_COMMANDS=true is also required.'
-            : 'Set OBSIDIAN_ENABLE_COMMANDS=true to enable obsidian_list_commands and obsidian_execute_command.',
+            ? "Unset OBSIDIAN_READ_ONLY to allow commands; OBSIDIAN_ENABLE_COMMANDS=true is also required."
+            : "Set OBSIDIAN_ENABLE_COMMANDS=true to enable obsidian_list_commands and obsidian_execute_command.",
         }),
       );
 
-const tools = [...readToolDefinitions, searchNotesTool, ...writeTools, ...commandTools];
+const tools = [
+  ...readToolDefinitions,
+  searchNotesTool,
+  ...writeTools,
+  ...commandTools,
+];
 
 const { services } = await createApp({
   tools,
@@ -112,13 +120,13 @@ const { services } = await createApp({
  * data so the LLM (or operator) can self-correct without scrolling the log.
  */
 const bannerCtx = requestContextService.createRequestContext({
-  operation: 'startup',
+  operation: "startup",
   ...policy.describe(),
   enableCommands: config.enableCommands && !config.readOnly,
   omnisearchUrl: obsidian.omnisearchUrl,
   omnisearchReachable,
 });
-services.logger.info('Path policy', bannerCtx);
+services.logger.info("Path policy", bannerCtx);
 services.logger.info(
   omnisearchReachable
     ? `Omnisearch reachable at ${obsidian.omnisearchUrl} — \`omnisearch\` mode enabled on \`obsidian_search_notes\`.`
@@ -127,7 +135,7 @@ services.logger.info(
 );
 if (policy.readOnlyShadowsWritePaths) {
   services.logger.warning(
-    'OBSIDIAN_WRITE_PATHS is set but ignored because OBSIDIAN_READ_ONLY=true. Unset one of the two to remove the conflict.',
+    "OBSIDIAN_WRITE_PATHS is set but ignored because OBSIDIAN_READ_ONLY=true. Unset one of the two to remove the conflict.",
     bannerCtx,
   );
 }
